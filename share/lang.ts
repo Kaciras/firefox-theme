@@ -1,7 +1,10 @@
 /**
  * 使用 getter & setter 将 object[name] 绑定到 target[prop]。
  */
-export function delegate(object, name, target, prop) {
+export function delegate(
+	object: Record<string, unknown>, name: string,
+	target: Record<string, unknown>, prop: string,
+) {
 	Object.defineProperty(object, name, {
 		configurable: true,
 		enumerable: true,
@@ -17,32 +20,36 @@ export function delegate(object, name, target, prop) {
  * @param input 输入组件，必须有 name 和 type 属性。
  * @param receiver 要绑定的对象
  */
-export function bindInput(input, receiver) {
+export function bindInput(
+	input: HTMLInputElement,
+	receiver: Record<string, any>,
+) {
 	const { type, name } = input;
-	let prop;
 
+	let prop: keyof HTMLInputElement;
 	switch (type) {
-		case "number":
-			prop = "valueAsNumber";
-			break;
 		case "checkbox":
 			prop = "checked";
+			break;
+		case "number":
+			prop = "valueAsNumber";
 			break;
 		default:
 			prop = "value";
 			break;
 	}
 
+	// @ts-ignore
 	input[prop] = receiver[name];
-	input.addEventListener("input", event => {
-		receiver[name] = event.target[prop];
+	input.addEventListener("input", () => {
+		receiver[name] = input[prop];
 	});
 }
 
 /**
  * 虽然 Node 自带 dirname，但在浏览器里用的话还得自己写一个。
  */
-export function dirname(path) {
+export function dirname(path: string) {
 	const i = path.lastIndexOf("/");
 	return i < 0 ? path : path.slice(0, i);
 }
@@ -55,7 +62,7 @@ export function dirname(path) {
  * @param j 新位置
  * @param n 移动的元素个数
  */
-export function jump(array, i, j, n = 1) {
+export function jump(array: unknown[], i: number, j: number, n = 1) {
 	array.splice(j, 0, ...array.splice(i, n));
 }
 
@@ -65,6 +72,6 @@ export function jump(array, i, j, n = 1) {
  * @param el DOM 元素
  * @return {number} 位置，如果没有父元素则出错。
  */
-export function indexInParent(el) {
-	return Array.prototype.indexOf.call(el.parentNode.children, el);
+export function indexInParent(el: HTMLElement) {
+	return Array.prototype.indexOf.call(el.parentNode!.children, el);
 }

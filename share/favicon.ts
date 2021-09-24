@@ -14,7 +14,7 @@ import { blobToBase64URL, encodeSVG } from "./codec.js";
  * @param url 网页的 URL
  * @param signal 下载过程可以取消
  */
-async function* fetchLinks(url, signal) {
+async function* fetchLinks(url: string, signal?: AbortSignal) {
 	const response = await fetch(url, { mode: "no-cors", signal });
 	if (!response.ok) {
 		throw new Error(`Request failed, status = ${response.status}`);
@@ -23,17 +23,18 @@ async function* fetchLinks(url, signal) {
 	const doc = parser.parseFromString(await response.text(), "text/html");
 	const links = doc.head.getElementsByTagName("link");
 
-	// 不能直接 .href 因为它会转成以本页面为基础的 URL。
-	function resolveUrl(link) {
-		return new URL(link.getAttribute("href"), url).toString();
-	}
-
 	let manifestURL;
 
 	for (const link of links) {
+		// 不能直接 .href 因为它会转成以本页面为基础的 URL。
+		const href = link.getAttribute("href");
+
+		if (href === null) {
+			continue; // 毕竟是外部数据，有不规范的可能
+		}
 		switch (link.rel) {
 			case "manifest":
-				manifestURL = resolveUrl(link);
+				manifestURL = new URL(href, url).toString();
 				break;
 			case "shortcut icon":
 			case "icon":
@@ -41,7 +42,7 @@ async function* fetchLinks(url, signal) {
 				yield {
 					sizes: link.sizes,
 					type: link.type,
-					href: resolveUrl(link),
+					href: new URL(href, url).toString(),
 				};
 		}
 	}
@@ -58,7 +59,7 @@ async function* fetchLinks(url, signal) {
  * @param signal 取消信号
  * @see https://developer.mozilla.org/zh-CN/docs/Web/Manifest#icons
  */
-async function fetchManifest(url, signal) {
+async function fetchManifest(url: string, signal?: AbortSignal) {
 	const response = await fetch(url, { mode: "no-cors", signal });
 	if (!response.ok) {
 		throw new Error(`Request failed, status = ${response.status}`);
@@ -66,7 +67,8 @@ async function fetchManifest(url, signal) {
 	const { icons = [] } = await response.json();
 	const baseURL = dirname(url);
 
-	return icons.map(icon => {
+	// 没找到 manifest.json 的类型，我也懒得自己写。
+	return icons.map((icon: any) => {
 		const sizes = icon.sizes.split(" ");
 		const href = new URL(icon.src, baseURL);
 		return { href, sizes, type: icon.type };
@@ -82,7 +84,7 @@ async function fetchManifest(url, signal) {
  * @param signal AbortSignal 取消加载页面
  * @return {Promise<string>} 图标的 URL。
  */
-export async function getFaviconUrl(url, signal) {
+export async function getFaviconUrl(url: string, signal?: AbortSignal) {
 	let best;
 	let size = Number.MAX_SAFE_INTEGER;
 
@@ -100,7 +102,7 @@ export async function getFaviconUrl(url, signal) {
 			continue;
 		}
 
-		let match = /(\d+)x(\d+)/.exec(sizes[0]);
+		const match = /(\d+)x(\d+)/.exec(sizes[0]);
 		if (match === null) {
 			continue; // 尺寸未知的不要
 		}
@@ -123,7 +125,7 @@ export async function getFaviconUrl(url, signal) {
  * @param url 原始 URL
  * @return {Promise<string>} DataURL
  */
-export async function imageUrlToLocal(url) {
+export async function imageUrlToLocal(url: string) {
 	const response = await fetch(url, { mode: "no-cors" });
 	if (!response.ok) {
 		throw new Error(`资源下载失败：${url}`);

@@ -1,3 +1,4 @@
+import typescript from '@rollup/plugin-typescript';
 import alias from "@rollup/plugin-alias";
 import { visualizer } from "rollup-plugin-visualizer";
 import { terser } from "rollup-plugin-terser";
@@ -22,6 +23,7 @@ export default {
 	output: {
 		format: "esm",
 		dir: "dist",
+		sourcemap: true,
 
 		// 新选项能提升输出代码的性能，但我没怎么感觉到。
 		generatedCode: "es2015",
@@ -45,6 +47,7 @@ export default {
 		]),
 		htmlEntry(),
 		template(),
+		typescript(),
 		importMeta({ dev: !isProduction }),
 		isProduction && terser(),
 		isProduction && visualizer(),

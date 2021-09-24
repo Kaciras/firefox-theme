@@ -1,4 +1,4 @@
-const escapes = {
+const escapes: Record<string, string> = {
 	'"': "'",
 	"%": "%25",
 	"#": "%23",
@@ -13,7 +13,7 @@ const escapes = {
  *
  * @see https://www.zhangxinxu.com/wordpress/2018/08/css-svg-background-image-base64-encode/
  */
-export function encodeSVG(code) {
+export function encodeSVG(code: string) {
 	return code.replaceAll(/["%#{}<>]/g, v => escapes[v]);
 }
 
@@ -26,7 +26,7 @@ export function encodeSVG(code) {
  * @param blob Blob对象
  * @return Data-URL 字符串
  */
-export function blobToBase64URL(blob) {
+export function blobToBase64URL(blob: Blob) {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onerror = reject;
