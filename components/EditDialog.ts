@@ -1,6 +1,7 @@
 import WebsiteIcon from "@assets/Website.svg?url";
 import { delegate, getFaviconUrl, imageUrlToLocal } from "@share";
-import "./TaskButton.js";
+import { DialogBaseElement } from "./DialogBase";
+import { TaskButtonElement } from "./TaskButton";
 import styles from "./EditDialog.css";
 
 const defaultData = {
@@ -41,18 +42,30 @@ template.innerHTML = `
 
 const loadingHTML = "<span class='dot-flashing'><div class='middle'></div></span>";
 
-class EditDialogElement extends HTMLElement {
+export interface EditDialogElement {
+	label: string;
+	url: string;
+	favicon: string;
+}
+
+export class EditDialogElement extends HTMLElement {
+
+	private readonly dialogEl: DialogBaseElement;
+	private readonly iconEl: HTMLImageElement;
+	private readonly nameInput: HTMLInputElement;
+	private readonly urlInput: HTMLInputElement;
+	private readonly fetchButton: TaskButtonElement;
 
 	constructor() {
 		super();
 		const root = this.attachShadow({ mode: "closed" });
 		root.append(template.content.cloneNode(true));
 
-		this.dialogEl = root.querySelector("dialog-base");
-		this.iconEl = root.getElementById("favicon");
-		this.nameInput = root.querySelector("input[name='name']");
-		this.urlInput = root.querySelector("input[name='url']");
-		this.fetchButton = root.getElementById("fetch");
+		this.dialogEl = root.querySelector("dialog-base") as DialogBaseElement;
+		this.iconEl = root.getElementById("favicon") as HTMLImageElement;
+		this.nameInput = root.querySelector("input[name='name']") as HTMLInputElement;
+		this.urlInput = root.querySelector("input[name='url']") as HTMLInputElement;
+		this.fetchButton = root.getElementById("fetch") as TaskButtonElement;
 
 		delegate(this, "label", this.nameInput, "value");
 		delegate(this, "url", this.urlInput, "value");
@@ -61,8 +74,8 @@ class EditDialogElement extends HTMLElement {
 		this.fetchButton.taskFn = this.fetchFavicon.bind(this);
 
 		this.handleActionClick = this.handleActionClick.bind(this);
-		root.getElementById("cancel").onclick = this.handleActionClick;
-		root.getElementById("accept").onclick = this.handleActionClick;
+		root.getElementById("cancel")!.onclick = this.handleActionClick;
+		root.getElementById("accept")!.onclick = this.handleActionClick;
 	}
 
 	// 不要使用 Object.assign 因为参数可能含有额外的字段。
@@ -77,7 +90,7 @@ class EditDialogElement extends HTMLElement {
 	}
 
 	// 把要传递的属性挑出来，以便调用方解构。
-	handleActionClick(event) {
+	handleActionClick(event: MouseEvent) {
 		const { resolve, dialogEl, urlInput } = this;
 
 		if (event.target.id !== "accept") {

@@ -1,5 +1,6 @@
 import AddIcon from "@assets/Add.svg";
 import CheckIcon from "@assets/Check.svg";
+import { DialogBaseElement } from "./DialogBase";
 import styles from "./TopSiteDialog.css";
 
 /**
@@ -8,7 +9,7 @@ import styles from "./TopSiteDialog.css";
  * @param url TopSite 的 URL
  * @return {string} 用作标题的域名
  */
-function adviceTitle(url) {
+function adviceTitle(url: string) {
 	const { hostname } = new URL(url);
 	const parts = hostname.split(".");
 	const top = parts.pop();
@@ -40,15 +41,20 @@ itemTemplate.innerHTML = `
  * browser.topSites 仅支持读取，而新标签页却需要自定义快捷方式，
  * 所以只能从 topSites 导入然后保存到本插件的存储。
  */
-class TopSiteDialogElement extends HTMLElement {
+export class TopSiteDialogElement extends HTMLElement {
+
+	private readonly dialogEl: DialogBaseElement;
+	private readonly listEl: HTMLUListElement;
+
+	private resolve = () => {};
 
 	constructor() {
 		super();
 		const root = this.attachShadow({ mode: "closed" });
 		root.append(template.content.cloneNode(true));
 
-		this.dialogEl = root.querySelector("dialog-base");
-		this.listEl = root.getElementById("top-sites");
+		this.dialogEl = root.querySelector("dialog-base") as DialogBaseElement;
+		this.listEl = root.getElementById("top-sites") as HTMLUListElement;
 
 		// 自定义的事件没法用 onXXX 啊……
 		this.dialogEl.addEventListener("backdrop-click", () => {
@@ -73,7 +79,7 @@ class TopSiteDialogElement extends HTMLElement {
 			title ||= adviceTitle(url);
 
 			const fragment = itemTemplate.content.cloneNode(true);
-			const item = listItems[i] = fragment.firstChild;
+			const item = listItems[i] = fragment.firstChild as any;
 
 			item.children[0].src = favicon;
 			item.children[1].textContent = title;
@@ -96,7 +102,7 @@ class TopSiteDialogElement extends HTMLElement {
 
 		this.listEl.replaceChildren(...listItems);
 		this.dialogEl.showModal();
-		return new Promise(resolve => this.resolve = resolve);
+		return new Promise<void>(resolve => this.resolve = resolve);
 	}
 }
 

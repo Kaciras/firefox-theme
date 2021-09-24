@@ -32,6 +32,19 @@ template.innerHTML = `
  */
 class SearchBoxElement extends HTMLElement {
 
+	limit = 8;
+	threshold = 500;
+	waitIME = true;
+
+	private readonly inputEl: HTMLInputElement;
+	private readonly iconEl: HTMLImageElement;
+	private readonly boxEl: HTMLDivElement;
+	private readonly suggestionEl: HTMLUListElement;
+
+	private quering = new AbortController();
+	private timer = 0;
+	private index: number | null = null;
+
 	/*
 	 * Firefox 不支持 delegatesFocus，很难处理焦点是否在输入框内的问题。
 	 * https://caniuse.com/?search=delegatesFocus
@@ -41,16 +54,11 @@ class SearchBoxElement extends HTMLElement {
 		const root = this.attachShadow({ mode: "closed" });
 		root.append(template.content.cloneNode(true));
 
-		this.inputEl = root.getElementById("input");
-		this.iconEl = root.getElementById("favicon");
-		this.boxEl = root.getElementById("box");
-		this.suggestionEl = root.getElementById("suggestions");
+		this.inputEl = root.getElementById("input") as HTMLInputElement;
+		this.iconEl = root.getElementById("favicon") as HTMLImageElement;
+		this.boxEl = root.getElementById("box") as HTMLDivElement;
+		this.suggestionEl = root.getElementById("suggestions") as HTMLUListElement;
 
-		this.limit = 8;
-		this.threshold = 500;
-		this.waitIME = true;
-
-		this.quering = new AbortController();
 		this.suggest = this.suggest.bind(this);
 
 		/*
@@ -70,7 +78,7 @@ class SearchBoxElement extends HTMLElement {
 		this.inputEl.onfocus = () => this.setSuggestVisible(true);
 
 		root.addEventListener("keydown", this.handleKeyDown.bind(this));
-		root.getElementById("button").onclick = this.handleSearchClick.bind(this);
+		root.getElementById("button")!.onclick = this.handleSearchClick.bind(this);
 	}
 
 	/*
@@ -81,7 +89,7 @@ class SearchBoxElement extends HTMLElement {
 	 * 这两个类分别表示两个独立的条件，仅当同时存在建议列表才会显示。
 	 */
 
-	setSuggestVisible(value) {
+	setSuggestVisible(value: boolean) {
 		this.boxEl.classList.toggle("focused", value);
 	}
 
@@ -90,14 +98,14 @@ class SearchBoxElement extends HTMLElement {
 	 * 只有下一次的请求才能中断前面的。
 	 * 这样的设计使得输入中途也能显示建议，并尽可能地减少了请求，与其他平台一致。
 	 */
-	async handleInput(event) {
+	async handleInput(event: InputEvent) {
 		const { waitIME, threshold } = this;
 		if (waitIME && event.isComposing) {
 			return;
 		}
 		if (this.inputEl.value) {
 			clearTimeout(this.timer);
-			this.timer = setTimeout(this.suggest, threshold);
+			this.timer = window.setTimeout(this.suggest, threshold);
 		} else {
 			this.index = null;
 			this.boxEl.classList.remove("suggested");
@@ -121,7 +129,7 @@ class SearchBoxElement extends HTMLElement {
 		this.boxEl.classList.toggle("suggested", count > 0);
 	}
 
-	async fetchSuggestions(searchTerms) {
+	async fetchSuggestions(searchTerms: string) {
 		this.quering.abort();
 		this.quering = new AbortController();
 
@@ -138,7 +146,7 @@ class SearchBoxElement extends HTMLElement {
 
 	// 由于 compositionend 先于 KeyUp 所以只能用 KeyDown 确保能获取输入状态。
 	// Google 的搜索页面也是在 KeyDown 阶段就触发。
-	handleInputKeyDown(event) {
+	handleInputKeyDown(event: KeyboardEvent) {
 		if (event.key !== "Enter") {
 			return;
 		}
@@ -154,7 +162,7 @@ class SearchBoxElement extends HTMLElement {
 		location.href = searchAPI + this.inputEl.value;
 	}
 
-	handleKeyDown(event) {
+	handleKeyDown(event: KeyboardEvent) {
 		let diff;
 
 		switch (event.key) {
@@ -176,7 +184,7 @@ class SearchBoxElement extends HTMLElement {
 		const { index } = this;
 		const { length } = children;
 
-		if (Number.isInteger(index)) {
+		if (index !== null) {
 			children[index].classList.remove("active");
 			this.index = (index + diff + length) % length;
 		} else {

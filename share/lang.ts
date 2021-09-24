@@ -2,8 +2,8 @@
  * 使用 getter & setter 将 object[name] 绑定到 target[prop]。
  */
 export function delegate(
-	object: Record<string, unknown>, name: string,
-	target: Record<string, unknown>, prop: string,
+	object: any, name: string,
+	target: any, prop: string,
 ) {
 	Object.defineProperty(object, name, {
 		configurable: true,

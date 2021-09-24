@@ -4,6 +4,12 @@ declare module "*.css" {
 	export default url;
 }
 
+declare module "*.ico" {
+	const url: string;
+
+	export default url;
+}
+
 declare module "*.svg" {
 	const contentOrUrl: string;
 

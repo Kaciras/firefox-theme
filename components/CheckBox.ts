@@ -1,6 +1,6 @@
+import { delegate } from "@share";
 import Icon from "@assets/CheckBox.svg";
 import IconChecked from "@assets/CheckBoxChecked.svg";
-import { delegate } from "@share";
 import styles from "./CheckBox.css";
 
 const template = document.createElement("template");
@@ -11,24 +11,32 @@ template.innerHTML = `
 	<span id="label"><slot></slot></span>
 `;
 
+export interface CheckBoxElement {
+	name: string;
+	type: "checkbox";
+}
+
 /*
  * 实现自定义的复选框可以参考这个教程：
  * https://developers.google.com/web/fundamentals/web-components/examples/howto-checkbox
  */
 
-class CheckBoxElement extends HTMLElement {
+export class CheckBoxElement extends HTMLElement {
 
 	static get observedAttributes() {
 		return ["checked", "disabled", "name"];
 	}
+
+	private readonly inputEl: HTMLInputElement;
+	private readonly markEl: HTMLDivElement;
 
 	constructor() {
 		super();
 		const root = this.attachShadow({ mode: "closed" });
 		root.append(template.content.cloneNode(true));
 
-		this.inputEl = root.getElementById("input");
-		this.markEl = root.getElementById("icon");
+		this.inputEl = root.getElementById("input") as HTMLInputElement;
+		this.markEl = root.getElementById("icon") as HTMLDivElement;
 
 		delegate(this, "name", this.inputEl, "name");
 
@@ -45,7 +53,7 @@ class CheckBoxElement extends HTMLElement {
 		return this.inputEl.checked;
 	}
 
-	attributeChangedCallback(name, oldValue, newValue) {
+	attributeChangedCallback(name: string, oldValue: any, newValue: any) {
 		const { inputEl } = this;
 		if (newValue === null) {
 			inputEl.removeAttribute(name);
@@ -58,7 +66,7 @@ class CheckBoxElement extends HTMLElement {
 	 * 即便内部的 input 能捕获焦点，但被聚焦对象仍会变为整个组件。
 	 * 所以需要自行处理键盘切换值的问题。
 	 */
-	handleKeyup(event) {
+	handleKeyup(event: KeyboardEvent) {
 		if (event.key === " ") {
 			event.preventDefault();
 			this.toggleChecked();

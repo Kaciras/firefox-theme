@@ -9,6 +9,8 @@ template.innerHTML = `
 	</div>
 `;
 
+type TaskFn =(signal: AbortSignal) => Promise<any>;
+
 /**
  * 拥有繁忙状态的按钮，点击时启动任务并转为繁忙状态，完成后变为原样。
  * 繁忙状态保持原来的大小，内容变为加载指示器，点击繁忙状态的按钮会取消当前任务。
@@ -16,19 +18,24 @@ template.innerHTML = `
  * 【实现注意】
  * Custom Element v1 不支持继承其他元素，如果这么做会显示不出 ShadowDOM。
  */
-class TaskButtonElement extends HTMLElement {
+export class TaskButtonElement extends HTMLElement {
+
+	taskFn: TaskFn = Promise.resolve;
+
+	private readonly slotEl: HTMLSlotElement;
+	private readonly loadingEl: HTMLElement;
+
+	private running = false;
+	private controller = new AbortController();
 
 	constructor() {
 		super();
 		const root = this.attachShadow({ mode: "closed" });
 		root.append(template.content.cloneNode(true));
 
-		this.slotEl = root.querySelector("slot");
-		this.loadingEl = root.querySelector(".dot-flashing");
+		this.slotEl = root.querySelector("slot") as HTMLSlotElement;
+		this.loadingEl = root.querySelector(".dot-flashing") as HTMLElement;
 		this.loadingEl.remove();
-
-		this.running = false;
-		this.controller = new AbortController();
 
 		/*
 		 * ShadowRoot 是包裹内部元素的大小，小于整个按钮，所以要监听外层。

@@ -27,10 +27,10 @@ export function encodeSVG(code: string) {
  * @return Data-URL 字符串
  */
 export function blobToBase64URL(blob: Blob) {
-	return new Promise((resolve, reject) => {
+	return new Promise<string>((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onerror = reject;
-		reader.onloadend = () => resolve(reader.result);
+		reader.onloadend = () => resolve(reader.result as string);
 		reader.readAsDataURL(blob);
 	});
 }

@@ -28,36 +28,38 @@ template.innerHTML = `
 /**
  * 因为 Firefox 不支持 dialog 元素，所以自己搞了，顺便加个关闭按钮。
  */
-class DialogBaseElement extends HTMLElement {
+export class DialogBaseElement extends HTMLElement {
 
 	static get observedAttributes() {
 		return ["name"];
 	}
+
+	private readonly titleEl: HTMLElement;
 
 	constructor() {
 		super();
 		const root = this.attachShadow({ mode: "closed" });
 		root.append(template.content.cloneNode(true));
 
-		this.titleEl = root.querySelector("h1");
+		this.titleEl = root.querySelector("h1") as HTMLElement;
 
-		root.querySelector("button").onclick = this.hide.bind(this);
-		root.getElementById("dialog").onkeyup = event => {
+		root.querySelector("button")!.onclick = this.hide.bind(this);
+		root.getElementById("dialog")!.onkeyup = event => {
 			event.key === "Escape" && this.hide();
 		};
-		root.getElementById("backdrop").onclick = this.handleBackdropClick.bind(this);
+		root.getElementById("backdrop")!.onclick = this.handleBackdropClick.bind(this);
 	}
 
 	get name() {
-		return this.getAttribute("aria-labelledby");
+		return this.getAttribute("aria-labelledby")!;
 	}
 
-	set name(value) {
+	set name(value: string) {
 		this.titleEl.textContent = value;
 		this.setAttribute("aria-labelledby", value);
 	}
 
-	attributeChangedCallback(name, old, value) {
+	attributeChangedCallback(name: string, old: any, value: any) {
 		this.name = value;
 	}
 
