@@ -1,42 +1,60 @@
 import { readFile } from "fs/promises";
 import { basename } from "path";
-import { createFilter } from "@rollup/pluginutils";
+import { PluginContext } from "rollup";
+import { createFilter, FilterPattern } from "@rollup/pluginutils";
 import mime from "mime";
 import { encodeSVG } from "../share/codec.js";
 
-export const AssetType = {
-	Source: 0,		// 作为字符串导入。
-	Url: 1,			// 作为 URL 导入，可能会内联为 DataUrl。
-	Resource: 2,	// 作为外部 URL 导入。
-};
+export enum AssetType {
+	Source,	// 作为字符串导入。
+	Url,		// 作为 URL 导入，可能会内联为 DataUrl。
+	Resource,	// 作为外部 URL 导入。
+}
 
 const srcRE = /[?&]source(?:&|$)/;
 const urlRE = /[?&]url(?:&|$)/;
 const resRE = /[?&]resource(?:&|$)/;
 
-function detectFromQuery(id) {
+function detectFromQuery(id: string) {
 	if (srcRE.test(id)) return AssetType.Source;
 	if (urlRE.test(id)) return AssetType.Url;
 	if (resRE.test(id)) return AssetType.Resource;
 }
 
 // https://github.com/rollup/plugins/blob/master/packages/url/src/index.js
-function toDataUrl(source, mimetype) {
+function toDataUrl(source: Source, mimetype: string | null) {
 	const isSVG = mimetype === "image/svg+xml";
 	const code = isSVG
 		? encodeSVG(source.string)
 		: source.buffer.toString("base64");
+
 	const encoding = isSVG ? "" : ";base64";
 	return `data:${mimetype}${encoding},${code}`;
 }
+
+export interface Info {
+	type: AssetType;
+	id: string;
+	params: URLSearchParams;
+}
+
+export interface Source {
+	readonly data: string | Buffer;
+	readonly string: string;
+	readonly buffer: Buffer;
+}
+
+type LoaderFn = (source: Source, info: Info) => Promise<string | Buffer>;
 
 /**
  * 本模块的 loader 跟一样 Webpack 用 StringSource 和 BufferSource
  * 分别包装字符串和 Buffer 两种类型的结果，提供一致的接口：
  */
-class StringSource {
+class StringSource implements Source {
 
-	constructor(data) {
+	readonly data: string;
+
+	constructor(data: string) {
 		this.data = data;
 	}
 
@@ -49,9 +67,11 @@ class StringSource {
 	}
 }
 
-class BufferSource {
+class BufferSource implements Source {
 
-	constructor(buffer) {
+	readonly data: Buffer;
+
+	constructor(buffer: Buffer) {
 		this.data = buffer;
 	}
 
@@ -64,15 +84,31 @@ class BufferSource {
 	}
 }
 
+interface FilterOptions {
+	include?: FilterPattern;
+	exclude?: FilterPattern;
+}
+
+interface AssetPluginOptions {
+	loaders?: LoaderFn[];
+	limit?: number;
+	source?: FilterOptions;
+	url?: FilterOptions;
+	resource?: FilterOptions;
+}
+
 /**
  * rollup/pluginutils 的 createFilter 在空参数时默认为全部通过，
  * 这跟常识不符，一般没有指定的话都是全部拦截的。
  *
  * @param options 包含 include 和 exclude 的对象
  */
-function createFilter2(options) {
+function createFilter2(options: FilterOptions) {
 	const { include, exclude } = options;
-	if (!include?.length) {
+	if (!include) {
+		return () => false;
+	}
+	if (Array.isArray(include) && !include.length) {
 		return () => false;
 	}
 	return createFilter(include, exclude);
@@ -82,14 +118,14 @@ function createFilter2(options) {
  * Rollup 似乎没有提供处理资源的规范，只能自己撸一个了。
  * 本插件提供一个通用的接口，将资源分为三类，其它插件可以通过设置 URL 参数来让模块本本插件处理。
  */
-export default function createInlinePlugin(options) {
+export default function createInlinePlugin(options: AssetPluginOptions) {
 	const { source = {}, url = {}, resource = {}, limit = 4096, loaders = [] } = options;
 
 	const isInline = createFilter2(source);
 	const isUrl = createFilter2(url);
 	const isResource = createFilter2(resource);
 
-	function detectFromPath(id) {
+	function detectFromPath(id: string) {
 		if (isInline(id)) return AssetType.Source;
 		if (isUrl(id)) return AssetType.Url;
 		if (isResource(id)) return AssetType.Resource;
@@ -106,16 +142,16 @@ export default function createInlinePlugin(options) {
 		 * @param importer 引用此模块的模块
 		 * @return {Promise<string|null>} 解析后的 ID
 		 */
-		async resolveId(source, importer) {
+		async resolveId(this: PluginContext, source: string, importer: string) {
 			if (!detectFromQuery(source)) {
 				return null;
 			}
 			const [file, query] = source.split("?", 2);
-			const { id } = await this.resolve(file, importer, { skipSelf: true });
-			return id + "?" + query;
+			const resolved = await this.resolve(file, importer, { skipSelf: true });
+			return resolved!.id + "?" + query;
 		},
 
-		async load(id) {
+		async load(this: PluginContext, id: string) {
 			const type = detectFromQuery(id) ?? detectFromPath(id);
 			if (type === undefined) {
 				return null;
@@ -125,7 +161,7 @@ export default function createInlinePlugin(options) {
 			this.addWatchFile(file);
 
 			const info = { id, type, params };
-			let source = new BufferSource(await readFile(file));
+			let source: Source = new BufferSource(await readFile(file));
 
 			for (const loaderFn of loaders) {
 				const rv = await loaderFn(source, info);

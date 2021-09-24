@@ -9,7 +9,7 @@
  * @param table 一个对象，包含环境变量的定义，值会自动转换无需 JSON 化。
  * @see https://github.com/vitejs/vite/blob/main/packages/vite/src/node/plugins/define.ts
  */
-export default function metaPlugin(table) {
+export default function metaPlugin(table: Record<string, any>) {
 
 	// 复制一份，保证不变性
 	const map = new Map(Object.entries(table));
@@ -17,7 +17,7 @@ export default function metaPlugin(table) {
 	return {
 		name: "define-import-meta",
 
-		resolveImportMeta(property) {
+		resolveImportMeta(property: string) {
 			if (!map.has(property)) {
 				return null;
 			}

@@ -1,7 +1,8 @@
 import { basename, dirname, resolve } from "path";
 import { existsSync } from "fs";
-import { minify } from "html-minifier-terser";
+import { OutputBundle, PluginContext } from "rollup";
 import HtmlParser from "node-html-parser";
+import { minify } from "html-minifier-terser";
 
 /**
  * 构造一个 JS 模块，导入所有 ID 。
@@ -10,7 +11,7 @@ import HtmlParser from "node-html-parser";
  * @param ids 要导入的 ID 列表
  * @return {string} JS 代码
  */
-export function chunkImport(ids) {
+export function chunkImport(ids: Iterable<string>) {
 	let code = "";
 	for (const id of ids) {
 		code += `import "${id}"\n`;
@@ -25,6 +26,17 @@ export const minifyOptions = {
 	removeComments: true,
 	removeAttributeQuotes: true,
 };
+
+// 绝对路径和找不到文件的不处理
+function check(ctx: string, url?: string): url is string {
+	if (!url) {
+		return false;
+	}
+	if (url.charCodeAt(0) === 0x2F) {
+		return false;
+	}
+	return existsSync(resolve(dirname(ctx), url));
+}
 
 /**
  * 支持 HTML 文件作为 Rollup 的 input，自动提取并处理其中的资源。
@@ -45,26 +57,19 @@ export default function htmlPlugin() {
 
 	return {
 		name: "html-entry",
-		transform(code, id) {
+
+		transform(code: string, id: string) {
 			if (!id.endsWith(".html")) {
 				return;
 			}
+			// @ts-ignore TODO https://github.com/taoqf/node-html-parser/pull/150
 			const document = HtmlParser.parse(code);
 			const imports = [];
-
-			// 绝对路径和找不到文件的不处理
-			function check(url) {
-				if (url.charCodeAt(0) === 0x2F) {
-					return false;
-				}
-				const file = resolve(dirname(id), url);
-				return existsSync(file);
-			}
 
 			const scripts = document.querySelectorAll("script");
 			for (const script of scripts) {
 				const src = script.getAttribute("src");
-				if (check(src)) {
+				if (check(id, src)) {
 					script.remove();
 					imports.push(src);
 				}
@@ -73,7 +78,7 @@ export default function htmlPlugin() {
 			const links = document.querySelectorAll("link");
 			for (const link of links) {
 				const href = link.getAttribute("href");
-				if (check(href)) {
+				if (check(id, href)) {
 					imports.push(href + "?resource");
 				}
 			}
@@ -82,7 +87,7 @@ export default function htmlPlugin() {
 			return chunkImport(imports);
 		},
 
-		async generateBundle(_, bundle) {
+		async generateBundle(this: PluginContext, _: unknown, bundle: OutputBundle) {
 			for (const [id, document] of documents) {
 				const head = document.querySelector("head");
 

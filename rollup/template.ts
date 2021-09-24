@@ -1,9 +1,11 @@
+import { PluginContext } from "rollup";
+import { Program } from "estree";
 import { minify } from "html-minifier-terser";
 import MagicString from "magic-string";
 import { minifyOptions } from "./html.js";
 
 // 这 ESTree 匹配个 .innerHtml = `...` 真麻烦啊。
-function getTemplateLiteral(node) {
+function getTemplateLiteral(node: any) {
 	if (node.type !== "ExpressionStatement") return;
 
 	const { expression } = node;
@@ -30,11 +32,12 @@ function getTemplateLiteral(node) {
 export default function templatePlugin() {
 	return {
 		name: "template-html",
-		async transform(code, id) {
+
+		async transform(this: PluginContext, code: string, id: string) {
 			if (!id.endsWith(".js")) {
 				return;
 			}
-			const ast = this.parse(code);
+			const ast = this.parse(code) as unknown as Program;
 			const occurs = ast.body.map(getTemplateLiteral).filter(Boolean);
 
 			// Vite 用这个库我就跟着用了，能生成 SourceMap 也挺好。

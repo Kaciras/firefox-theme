@@ -1,6 +1,14 @@
+import { OutputBundle, PluginContext } from "rollup";
 import { basename, join } from "path";
 import glob from "fast-glob";
 import { chunkImport } from "./html.js";
+
+export interface CopyEntry {
+	from: string;
+	to: string;
+	context?: string;
+	toDirectory?: boolean;
+}
 
 const hostId = "COPY_IMPORTER";
 
@@ -13,8 +21,8 @@ const hostId = "COPY_IMPORTER";
  *
  * @param list 复制项列表，格式参考了 copy-webpack-plugin。
  */
-export default function copyPlugin(list) {
-	const ids = new Set();
+export default function copyPlugin(list: CopyEntry[]) {
+	const ids = new Set<string>();
 
 	return {
 		name: "copy",
@@ -25,7 +33,7 @@ export default function copyPlugin(list) {
 		 *
 		 * 所有资源的 ID 中会加入 resource 参数，使其能够被 asset 插件处理。
 		 */
-		async buildStart() {
+		async buildStart(this: PluginContext) {
 			const groups = await Promise.all(list.map(entry => {
 				const { from, context } = entry;
 				return glob(context ? `${context}/${from}` : from);
@@ -50,7 +58,7 @@ export default function copyPlugin(list) {
 		/**
 		 * 虚拟模块无法被默认的解析器解析，需要自己处理下。
 		 */
-		async resolveId(source, importer) {
+		async resolveId(this: PluginContext, source: string, importer: string) {
 			if (source === hostId) {
 				return hostId;
 			}
@@ -64,7 +72,7 @@ export default function copyPlugin(list) {
 		 * 将待复制的文件的 ID 转换为虚拟模块里的 import 语句。
 		 * 同时还禁止了 TreeShake 以避免空模块警告。
 		 */
-		load(id) {
+		load(id: string) {
 			if (id !== hostId) {
 				return null;
 			}
@@ -80,6 +88,6 @@ export default function copyPlugin(list) {
 		 * @param _ 没用的参数
 		 * @param bundle 输出的入口文件
 		 */
-		generateBundle: (_, bundle) => delete bundle[hostId],
+		generateBundle: (_: unknown, bundle: OutputBundle) => delete bundle[hostId],
 	};
 }

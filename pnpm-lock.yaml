@@ -7,6 +7,9 @@ specifiers:
   '@rollup/plugin-typescript': ^8.2.5
   '@rollup/pluginutils': ^4.1.1
   '@types/firefox-webext-browser': ^82.0.1
+  '@types/html-minifier-terser': ^6.0.0
+  '@types/mime': ^2.0.3
+  '@types/svgo': ^2.4.2
   eslint: ^7.32.0
   fast-glob: ^3.2.7
   html-minifier-terser: ^6.0.2
@@ -34,6 +37,9 @@ devDependencies:
   '@rollup/plugin-typescript': 8.2.5_rollup@2.57.0+typescript@4.4.3
   '@rollup/pluginutils': 4.1.1
   '@types/firefox-webext-browser': 82.0.1
+  '@types/html-minifier-terser': 6.0.0
+  '@types/mime': 2.0.3
+  '@types/svgo': 2.4.2
   eslint: 7.32.0
   fast-glob: 3.2.7
   html-minifier-terser: 6.0.2
@@ -213,12 +219,26 @@ packages:
     resolution: {integrity: sha512-odcPKiJ34N8k53clIWen3hLvl09ja7SQ9NqtUbgmqeJ/a/ZRQiF665iXSFPcnl6cBn2XQgEg2lsUUApYNiyj+g==}
     dev: true
 
+  /@types/html-minifier-terser/6.0.0:
+    resolution: {integrity: sha512-NZwaaynfs1oIoLAV1vg18e7QMVDvw+6SQrdJc8w3BwUaoroVSf6EBj/Sk4PBWGxsq0dzhA2drbsuMC1/6C6KgQ==}
+    dev: true
+
   /@types/json-schema/7.0.9:
     resolution: {integrity: sha512-qcUXuemtEu+E5wZSJHNxUXeCZhAfXKQ41D+duX+VYPde7xyEVZci+/oXKJL13tnRs9lR2pr4fod59GT6/X1/yQ==}
     dev: true
 
+  /@types/mime/2.0.3:
+    resolution: {integrity: sha512-Jus9s4CDbqwocc5pOAnh8ShfrnMcPHuJYzVcSUU7lrh8Ni5HuIqX3oilL86p3dlTrk0LzHRCgA/GQ7uNCw6l2Q==}
+    dev: true
+
   /@types/node/16.4.2:
     resolution: {integrity: sha512-vxyhOzFCm+jC/T5KugbVsYy1DbQM0h3NCFUrVbu0+pYa/nr+heeucpqxpa8j4pUmIGLPYzboY9zIdOF0niFAjQ==}
+    dev: true
+
+  /@types/svgo/2.4.2:
+    resolution: {integrity: sha512-z/S0Ot40/oKEVmJnf9aS6Nk7nqH14KpAjAwR1qVGG08lZmH0LkNu7OHW1791tkHtsNW6sQl/OoWTfwWbosNArA==}
+    dependencies:
+      '@types/node': 16.4.2
     dev: true
 
   /@typescript-eslint/eslint-plugin/4.31.2_3815fab247b4312be6d1f55eb1f81298:
