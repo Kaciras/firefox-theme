@@ -123,3 +123,7 @@ dist
 .vscode
 
 /stats.html
+*.js.map
+/*/*.js
+
+!/*.js
